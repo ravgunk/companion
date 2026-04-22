@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SOCRATIC_DEBUGGER_PROMPT } from "@/lib/prompts";
+import { callPollinations, extractText } from "@/lib/pollinations";
 import type { ChatMessage } from "@/types";
-
-async function callPollinations(
-  messages: Array<{ role: string; content: string }>
-): Promise<string> {
-  const res = await fetch("https://text.pollinations.ai/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, model: "openai", stream: false }),
-  });
-  if (!res.ok) throw new Error(`Pollinations error: ${res.status}`);
-  return res.text();
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,16 +25,22 @@ export async function POST(req: NextRequest) {
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    let reply: string;
+    // Call Pollinations (retry once on network error)
+    let raw: string;
     try {
-      reply = await callPollinations(pollinationsMessages);
+      raw = await callPollinations(pollinationsMessages);
     } catch {
-      reply = await callPollinations(pollinationsMessages);
+      raw = await callPollinations(pollinationsMessages);
     }
 
-    return NextResponse.json({ reply: reply.trim(), attemptCount });
+    console.log("[chat] raw response (first 300 chars):", raw.slice(0, 300));
+
+    // extractText handles reasoning_content, choices, content, and plain-text responses
+    const reply = extractText(raw).trim();
+
+    return NextResponse.json({ reply, attemptCount });
   } catch (err) {
-    console.error("[chat]", err);
+    console.error("[chat] fatal error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Chat failed" },
       { status: 500 }
