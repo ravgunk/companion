@@ -31,11 +31,36 @@ export function ProblemsPanel({ state, onRetry }: ProblemsPanelProps) {
   if (state.status === "loading") return <LoadingState />;
   if (state.status === "error") return <ErrorState message={state.message} onRetry={onRetry} />;
 
-  const { problems } = state.data;
+  const problems = state.data.problems ?? [];
+
+  if (problems.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
+          <ListTodo size={22} className="text-[var(--text-tertiary)]" />
+        </div>
+        <div>
+          <p className="text-[13px] font-medium text-[var(--text-secondary)]">No problems returned</p>
+          <p className="mt-1 text-[12px] text-[var(--text-tertiary)]">
+            Try analyzing your code first, then generate problems
+          </p>
+        </div>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-1.5 rounded-md border border-[var(--border-default)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-colors"
+          >
+            <RefreshCw size={12} />
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-3">
-      {(problems ?? []).map((problem, i) => (
+      {problems.map((problem, i) => (
         <motion.div
           key={problem.id}
           initial={{ opacity: 0, y: 8 }}

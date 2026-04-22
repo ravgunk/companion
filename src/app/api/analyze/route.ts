@@ -15,12 +15,42 @@ async function callPollinations(
   return text;
 }
 
-function parseJSON(raw: string): AnalysisResult {
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```\s*$/, "")
-    .trim();
-  return JSON.parse(cleaned) as AnalysisResult;
+function extractAnalysisResult(raw: string): AnalysisResult {
+  let text = raw.trim();
+
+  // Unwrap OpenAI-style envelope if present
+  try {
+    const envelope = JSON.parse(text) as Record<string, unknown>;
+    const choices = envelope?.choices as Array<{ message?: { content?: string } }> | undefined;
+    if (choices?.[0]?.message?.content) {
+      text = choices[0].message.content;
+    }
+  } catch {}
+
+  console.log("[analyze] raw Pollinations text (first 300 chars):", text.slice(0, 300));
+
+  // Strategy 1: direct parse
+  try {
+    const parsed = JSON.parse(text) as AnalysisResult;
+    if (parsed?.concepts) return parsed;
+  } catch {}
+
+  // Strategy 2: strip all markdown fences
+  const noFences = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
+  try {
+    const parsed = JSON.parse(noFences) as AnalysisResult;
+    if (parsed?.concepts) return parsed;
+  } catch {}
+
+  // Strategy 3: first { to last }
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    const parsed = JSON.parse(text.slice(start, end + 1)) as AnalysisResult;
+    if (parsed?.concepts) return parsed;
+  }
+
+  throw new Error(`Could not extract valid JSON. First 200 chars: ${text.slice(0, 200)}`);
 }
 
 export async function POST(req: NextRequest) {
@@ -46,16 +76,20 @@ export async function POST(req: NextRequest) {
 
     let result: AnalysisResult;
     try {
-      result = parseJSON(raw);
-    } catch {
-      // ask model to return clean JSON
+      result = extractAnalysisResult(raw);
+    } catch (parseErr) {
+      console.warn("[analyze] first parse failed, retrying:", parseErr);
       const retryMessages = [
         ...messages,
         { role: "assistant", content: raw },
-        { role: "user", content: "Return only the JSON object, no markdown fences, no prose." },
+        {
+          role: "user",
+          content:
+            "Return ONLY the JSON object. No markdown fences, no explanatory text. Start your response with { and end with }.",
+        },
       ];
       const retryRaw = await callPollinations(retryMessages);
-      result = parseJSON(retryRaw);
+      result = extractAnalysisResult(retryRaw);
     }
 
     return NextResponse.json(result);
