@@ -67,7 +67,7 @@ export function AnalysisPanel({ state, onRetry }: AnalysisPanelProps) {
       >
         <SectionLabel>Concepts Detected</SectionLabel>
         <div className="flex flex-wrap gap-2">
-          {data.concepts.map((concept, i) => (
+          {(data.concepts ?? []).map((concept, i) => (
             <motion.div
               key={concept.name}
               initial={{ opacity: 0, scale: 0.88 }}
@@ -102,7 +102,7 @@ export function AnalysisPanel({ state, onRetry }: AnalysisPanelProps) {
       </motion.div>
 
       {/* Quality Notes */}
-      {data.qualityNotes.length > 0 && (
+      {(data.qualityNotes ?? []).length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ export function AnalysisPanel({ state, onRetry }: AnalysisPanelProps) {
         >
           <SectionLabel>Quality Notes</SectionLabel>
           <ul className="space-y-1.5">
-            {data.qualityNotes.map((note, i) => (
+            {(data.qualityNotes ?? []).map((note, i) => (
               <li key={i} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
                 <AlertCircle size={12} className="mt-[3px] shrink-0 text-[var(--warning)]" />
                 {note}

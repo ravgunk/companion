@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useTheme } from "next-themes";
@@ -32,23 +32,36 @@ import type { Language } from "@/types";
 type WorkspaceTab = "analyze" | "problems" | "notes";
 
 export default function Home() {
-  const session = loadSession();
-
-  const [code, setCode] = useState(session.code);
-  const [language, setLanguage] = useState<Language>(session.language);
+  // Start with SSR-safe defaults — localStorage is loaded after mount to prevent
+  // hydration mismatch (React errors #422 / #425).
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState<Language>("javascript");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("analyze");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(!session.onboarded);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [initialNotes, setInitialNotes] = useState("");
 
   const editorRef = useRef<unknown>(null);
   const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const { analysis, problems, runAnalysis, runGenerateProblems, resetAnalysis } = useAnalysis();
-  const { messages, attemptCount, isLoading, error, sendMessage, clearChat } = useChat(
-    session.messages,
-    session.attemptCount
+  const { messages, attemptCount, isLoading, error, sendMessage, clearChat, setMessages, setAttemptCount } = useChat(
+    [],
+    0
   );
+
+  useEffect(() => {
+    const session = loadSession();
+    setCode(session.code);
+    setLanguage(session.language);
+    setShowOnboarding(!session.onboarded);
+    setInitialNotes(session.notes);
+    if (session.messages.length > 0) setMessages(session.messages);
+    if (session.attemptCount > 0) setAttemptCount(session.attemptCount);
+  // setMessages and setAttemptCount are stable setState callbacks — safe to omit
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { setTheme, theme } = useTheme();
 
   const handleCodeChange = useCallback((v: string) => {
@@ -240,7 +253,7 @@ export default function Home() {
                     <ProblemsPanel state={problems} onRetry={() => runGenerateProblems(code, language)} />
                   )}
                   {activeTab === "notes" && (
-                    <NotesPanel initialValue={session.notes} />
+                    <NotesPanel initialValue={initialNotes} />
                   )}
                 </div>
               </Panel>

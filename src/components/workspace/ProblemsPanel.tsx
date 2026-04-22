@@ -35,7 +35,7 @@ export function ProblemsPanel({ state, onRetry }: ProblemsPanelProps) {
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-3">
-      {problems.map((problem, i) => (
+      {(problems ?? []).map((problem, i) => (
         <motion.div
           key={problem.id}
           initial={{ opacity: 0, y: 8 }}
@@ -97,13 +97,13 @@ function ProblemCard({ problem }: { problem: Problem }) {
                 <FormatBlock label="Output" content={problem.outputFormat} />
               </div>
 
-              {problem.constraints.length > 0 && (
+              {(problem.constraints ?? []).length > 0 && (
                 <div>
                   <p className="mb-1.5 text-[11px] font-medium uppercase tracking-widest text-[var(--text-disabled)]">
                     Constraints
                   </p>
                   <ul className="space-y-1">
-                    {problem.constraints.map((c, i) => (
+                    {(problem.constraints ?? []).map((c, i) => (
                       <li key={i} className="font-mono text-[12px] text-[var(--text-secondary)]">
                         {c}
                       </li>
@@ -112,7 +112,7 @@ function ProblemCard({ problem }: { problem: Problem }) {
                 </div>
               )}
 
-              {problem.examples.map((ex, i) => (
+              {(problem.examples ?? []).map((ex, i) => (
                 <div key={i}>
                   <p className="mb-1.5 text-[11px] font-medium uppercase tracking-widest text-[var(--text-disabled)]">
                     Example {i + 1}

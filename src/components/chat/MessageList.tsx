@@ -19,14 +19,16 @@ export function MessageList({ messages, isLoading, onSuggestion }: MessageListPr
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  if (messages.length === 0 && !isLoading) {
+  const safeMessages = messages ?? [];
+
+  if (safeMessages.length === 0 && !isLoading) {
     return <EmptyState onSuggestion={onSuggestion} />;
   }
 
   return (
     <div className="h-full overflow-y-auto px-5 py-5">
       <div className="mx-auto max-w-[720px] space-y-6">
-        {messages.map((msg, i) => (
+        {safeMessages.map((msg, i) => (
           <Message key={msg.id} message={msg} index={i} />
         ))}
         {isLoading && (

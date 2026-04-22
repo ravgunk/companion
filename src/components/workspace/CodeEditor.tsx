@@ -100,15 +100,17 @@ export function CodeEditor({ value, onChange, language, editorRef }: CodeEditorP
   );
 }
 
+const SKELETON_WIDTHS = ["75%", "55%", "85%", "45%", "65%", "80%", "50%", "70%", "60%", "75%", "55%", "40%"];
+
 function EditorSkeleton() {
   return (
     <div className="h-full w-full bg-[var(--bg-surface)] p-4">
       <div className="space-y-3">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {SKELETON_WIDTHS.map((width, i) => (
           <div
             key={i}
             className="shimmer h-[13px] rounded"
-            style={{ width: `${30 + Math.random() * 55}%`, opacity: 0.6 - i * 0.04 }}
+            style={{ width, opacity: 0.6 - i * 0.04 }}
           />
         ))}
       </div>
